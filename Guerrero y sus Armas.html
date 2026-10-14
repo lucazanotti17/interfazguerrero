@@ -1,0 +1,360 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>Guerrero y sus Armas</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500&family=Rajdhani:wght@600;700&display=swap">
+<style>
+/* Layout: dos personajes lado a lado, armería debajo, consola de salida al final (como el cout del original). */
+:root {
+  --bg: #eceff1;
+  --surface: #f8f9fa;
+  --fg: #1b2026;
+  --muted: #566370;
+  --line: #cdd4da;
+  --ember: #c0430f;
+  --steel: #5d7183;
+  --good: #2f7d4f;
+  --bad: #b3261e;
+  --log-bg: #161b20;
+  --log-fg: #dbe3ea;
+  --font-display: "Rajdhani", "Arial Narrow", sans-serif;
+  --font-body: "IBM Plex Sans", system-ui, sans-serif;
+  --font-mono: "IBM Plex Mono", ui-monospace, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #12161a; --surface: #1b2127; --fg: #e6ebef; --muted: #93a1ad; --line: #2d363e;
+    --ember: #ff7a3d; --steel: #8fa3b5; --good: #5fc08a; --bad: #ff7b72;
+    --log-bg: #0b0e11; --log-fg: #d5dde4; color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #12161a; --surface: #1b2127; --fg: #e6ebef; --muted: #93a1ad; --line: #2d363e;
+  --ember: #ff7a3d; --steel: #8fa3b5; --good: #5fc08a; --bad: #ff7b72;
+  --log-bg: #0b0e11; --log-fg: #d5dde4; color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body {
+  background: var(--bg);
+  color: var(--fg);
+  font: 15px/1.5 var(--font-body);
+  padding-block: 28px 40px;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+}
+main { max-width: 960px; margin: 0 auto; display: flex; flex-direction: column; gap: 28px; }
+h1, h2 { font-family: var(--font-display); font-weight: 700; margin: 0; text-wrap: balance; }
+h1 { font-size: clamp(2rem, 6vw, 3rem); line-height: 1.05; letter-spacing: .01em; }
+h2 { font-size: 1.35rem; letter-spacing: .04em; text-transform: uppercase; }
+.lead { max-width: 65ch; color: var(--muted); margin: 10px 0 0; }
+.lead code, .nota code { font-family: var(--font-mono); font-size: .88em; color: var(--fg); }
+
+.personajes { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 340px), 1fr)); gap: 20px; }
+.tarjeta { background: var(--surface); border: 1px solid var(--line); border-radius: 6px; padding: 18px; display: flex; flex-direction: column; gap: 14px; min-width: 0; }
+.cab { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; flex-wrap: wrap; }
+.cab h2 { font-size: 1.6rem; }
+.hab { font-size: .85rem; color: var(--muted); }
+.escena { background: var(--bg); border-radius: 4px; border: 1px solid var(--line); }
+.escena svg { display: block; width: 100%; max-width: 100%; height: auto; max-height: 260px; }
+.traje { fill: var(--traje); }
+.piel { fill: var(--steel); }
+.suelo { fill: var(--line); }
+.swing { transform-origin: 0 0; }
+.escena.golpe .swing { animation: golpe .45s ease-out; }
+.escena.herido svg { animation: sacudida .35s ease-out; }
+.escena.caido svg { opacity: .45; filter: grayscale(1); }
+@keyframes golpe { 0% { transform: rotate(0); } 40% { transform: rotate(62deg); } 100% { transform: rotate(0); } }
+@keyframes sacudida { 0%, 100% { transform: translateX(0); } 25% { transform: translateX(-6px); } 70% { transform: translateX(5px); } }
+
+.vida { display: flex; flex-direction: column; gap: 4px; }
+.vida-fila { display: flex; justify-content: space-between; font-size: .85rem; color: var(--muted); }
+.vida-fila strong { color: var(--fg); font-variant-numeric: tabular-nums; }
+.barra { height: 10px; background: var(--line); border-radius: 2px; overflow: hidden; }
+.barra > i { display: block; height: 100%; width: 100%; background: var(--good); transition: width .3s ease, background-color .3s; }
+.barra > i.baja { background: var(--bad); }
+
+.equipo { display: flex; flex-direction: column; gap: 6px; }
+.etiqueta { font-size: .75rem; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
+.fichas, .acciones { display: flex; flex-wrap: wrap; gap: 8px; }
+button { font: inherit; cursor: pointer; border-radius: 4px; border: 1px solid var(--line); background: var(--surface); color: var(--fg); padding: 7px 12px; }
+button:hover { border-color: var(--steel); }
+button:focus-visible { outline: 2px solid var(--ember); outline-offset: 2px; }
+.ficha[aria-pressed="true"] { background: var(--ember); border-color: var(--ember); color: #fff; }
+:root[data-theme="dark"] .ficha[aria-pressed="true"] { color: #1b1208; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .ficha[aria-pressed="true"] { color: #1b1208; } }
+.acciones button { font-weight: 500; }
+.acciones .peligro { color: var(--bad); }
+
+.armeria { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 200px), 1fr)); gap: 12px; }
+.arma { border: 1px solid var(--line); border-radius: 6px; padding: 12px 14px; background: var(--surface); display: flex; flex-direction: column; gap: 6px; min-width: 0; }
+.arma b { font-family: var(--font-display); font-size: 1.15rem; }
+.arma .poder { height: 6px; background: var(--line); border-radius: 2px; overflow: hidden; }
+.arma .poder i { display: block; height: 100%; background: var(--ember); }
+.arma small { color: var(--muted); }
+.nota { color: var(--muted); max-width: 65ch; margin: 0; }
+
+.consola-cab { display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; }
+#consola { list-style: none; margin: 10px 0 0; padding: 14px 16px; background: var(--log-bg); color: var(--log-fg); font: 13.5px/1.6 var(--font-mono); border-radius: 6px; height: 280px; overflow: auto; }
+#consola li { overflow-wrap: anywhere; }
+#consola li.sep { margin-top: 8px; color: #ffb48a; }
+#consola li.sep:first-child { margin-top: 0; }
+#consola li.cambio { color: #8fd3a9; }
+#consola li.dano { color: #ff9b94; }
+@media (prefers-reduced-motion: reduce) {
+  .escena.golpe .swing, .escena.herido svg { animation: none; }
+  .barra > i { transition: none; }
+}
+</style>
+
+<main>
+  <header>
+    <h1>Guerrero y sus Armas</h1>
+    <p class="lead">Las armas existen fuera del personaje. Cada <code>Personaje</code> solo guarda una referencia a un <code>Arma</code>, por eso puede cambiarla en cualquier momento y dos personajes pueden usar la misma. Eso es agregación.</p>
+  </header>
+
+  <section class="personajes" aria-label="Personajes" id="personajes"></section>
+
+  <section aria-labelledby="t-armeria">
+    <h2 id="t-armeria">Armería</h2>
+    <p class="nota" style="margin: 6px 0 14px">Las armas se crean una sola vez. Si dos personajes empuñan la misma, ambos apuntan al mismo objeto.</p>
+    <div class="armeria" id="armeria"></div>
+  </section>
+
+  <section aria-labelledby="t-consola">
+    <div class="consola-cab">
+      <h2 id="t-consola">Salida</h2>
+      <button type="button" id="limpiar">Limpiar</button>
+    </div>
+    <ul id="consola" aria-live="polite"></ul>
+  </section>
+</main>
+
+<script>
+// ============================================
+// SALIDA (equivale a cout)
+// ============================================
+const consola = document.getElementById('consola');
+function escribir(texto, tipo = '') {
+  const li = document.createElement('li');
+  li.textContent = texto;
+  if (tipo) li.className = tipo;
+  consola.appendChild(li);
+  consola.scrollTop = consola.scrollHeight;
+}
+
+// ============================================
+// ARMA
+// ============================================
+class Arma {
+  #nombre; #danio; #tipo;
+  constructor(nombre, danio, tipo) {
+    this.#nombre = nombre;
+    this.#danio = danio;
+    this.#tipo = tipo;
+  }
+  atacar() { escribir(`⚔️ Ataque con ${this.#nombre}: ${this.#danio} puntos de daño`); }
+  getDanio() { return this.#danio; }
+  getNombre() { return this.#nombre; }
+  getTipo() { return this.#tipo; }
+}
+
+// ============================================
+// HABILIDAD
+// ============================================
+class Habilidad {
+  #nombre; #poder;
+  constructor(nombre, poder) {
+    this.#nombre = nombre;
+    this.#poder = poder;
+  }
+  usar() { escribir(`✨ Se utiliza ${this.#nombre}: ${this.#poder} puntos de poder`); }
+  getNombre() { return this.#nombre; }
+}
+
+// ============================================
+// PERSONAJE (agrega un Arma y una Habilidad)
+// ============================================
+class Personaje {
+  #nombre; #vida; #vidaMax;
+  #arma;       // referencia: el Arma vive fuera del Personaje
+  #habilidad;  // referencia
+  constructor(nombre, vida, arma, habilidad) {
+    this.#nombre = nombre;
+    this.#vida = vida;
+    this.#vidaMax = vida;
+    this.#arma = arma;
+    this.#habilidad = habilidad;
+  }
+  atacar() {
+    escribir(`${this.#nombre} ataca:`, 'sep');
+    this.#arma.atacar();
+  }
+  usarHabilidad() {
+    escribir(`${this.#nombre} utiliza una habilidad:`, 'sep');
+    this.#habilidad.usar();
+  }
+  cambiarArma(nuevaArma) {
+    this.#arma = nuevaArma;
+    escribir(`${this.#nombre} ahora utiliza ${nuevaArma.getNombre()}`, 'cambio');
+  }
+  recibirDanio(danio) {
+    this.#vida = Math.max(0, this.#vida - danio);
+    escribir(`${this.#nombre} recibió ${danio} puntos de daño.`, 'dano');
+    escribir(`Vida restante: ${this.#vida}`, 'dano');
+  }
+  reiniciarVida() { this.#vida = this.#vidaMax; }
+  getNombre() { return this.#nombre; }
+  getVida() { return this.#vida; }
+  getVidaMax() { return this.#vidaMax; }
+  getArma() { return this.#arma; }
+  getHabilidad() { return this.#habilidad; }
+}
+
+// ============================================
+// CREACIÓN DE OBJETOS
+// ============================================
+const armas = [
+  new Arma('Espada de fuego', 30, 'espada'),
+  new Arma('Arco mágico', 20, 'arco'),
+  new Arma('Hacha de guerra', 35, 'hacha'),
+  new Arma('Martillo de trueno', 40, 'martillo'),
+];
+const curacion = new Habilidad('Curación', 25);
+const escudo = new Habilidad('Escudo mágico', 15);
+
+const guerrero = new Personaje('Guerrero', 100, armas[0], curacion);
+const arquero = new Personaje('Arquero', 80, armas[1], escudo);
+
+// ============================================
+// INTERFAZ GRÁFICA
+// ============================================
+const GLIFOS = {
+  espada: '<path d="M0 -64 L6 -32 L6 -6 L-6 -6 L-6 -32Z" fill="var(--steel)"/><rect x="-17" y="-6" width="34" height="6" rx="2" fill="var(--ember)"/><rect x="-3" y="0" width="6" height="18" fill="var(--fg)"/>',
+  arco: '<path d="M-4 -52 Q 36 0 -4 52" fill="none" stroke="var(--steel)" stroke-width="5" stroke-linecap="round"/><line x1="-4" y1="-52" x2="-4" y2="52" stroke="var(--muted)" stroke-width="1.5"/>',
+  hacha: '<rect x="-3" y="-52" width="6" height="78" fill="var(--fg)"/><path d="M3 -50 Q 36 -46 31 -24 Q 36 -4 3 -6Z" fill="var(--steel)"/>',
+  martillo: '<rect x="-3" y="-34" width="6" height="64" fill="var(--fg)"/><rect x="-21" y="-54" width="42" height="22" rx="3" fill="var(--steel)"/><rect x="-21" y="-46" width="42" height="5" fill="var(--ember)"/>',
+};
+
+function figura(casco) {
+  return `
+  <svg viewBox="0 0 200 230" role="img" aria-label="Personaje con arma equipada">
+    <ellipse class="suelo" cx="100" cy="212" rx="56" ry="9"/>
+    <rect class="traje" x="76" y="150" width="20" height="58" rx="4"/>
+    <rect class="traje" x="104" y="150" width="20" height="58" rx="4"/>
+    <rect class="traje" x="72" y="84" width="56" height="72" rx="10"/>
+    <line x1="76" y1="96" x2="52" y2="128" stroke="var(--steel)" stroke-width="10" stroke-linecap="round"/>
+    <circle class="piel" cx="100" cy="62" r="20"/>
+    ${casco
+      ? '<path class="traje" d="M78 62 A22 22 0 0 1 122 62 L122 54 L78 54Z"/><rect class="traje" x="97" y="40" width="6" height="18"/>'
+      : '<path class="traje" d="M76 66 Q100 22 124 66 Q100 50 76 66Z"/>'}
+    <line x1="124" y1="96" x2="150" y2="112" stroke="var(--steel)" stroke-width="10" stroke-linecap="round"/>
+    <g transform="translate(150 112)"><g class="swing" data-arma></g></g>
+  </svg>`;
+}
+
+const contenedor = document.getElementById('personajes');
+const vistas = [];
+
+function crearVista(personaje, opciones) {
+  const tarjeta = document.createElement('article');
+  tarjeta.className = 'tarjeta';
+  tarjeta.style.setProperty('--traje', opciones.color);
+  tarjeta.innerHTML = `
+    <div class="cab">
+      <h2>${personaje.getNombre()}</h2>
+      <span class="hab">Habilidad: ${personaje.getHabilidad().getNombre()}</span>
+    </div>
+    <div class="escena">${figura(opciones.casco)}</div>
+    <div class="vida">
+      <div class="vida-fila"><span>Vida</span><strong data-vida></strong></div>
+      <div class="barra"><i data-barra></i></div>
+    </div>
+    <div class="equipo">
+      <span class="etiqueta">Arma equipada: <b data-arma-nombre style="color:var(--fg)"></b></span>
+      <div class="fichas" data-fichas></div>
+    </div>
+    <div class="acciones">
+      <button type="button" data-atacar>Atacar</button>
+      <button type="button" data-habilidad>Usar habilidad</button>
+      <button type="button" class="peligro" data-danio>Recibir 20 de daño</button>
+      <button type="button" data-curar>Restaurar vida</button>
+    </div>`;
+  contenedor.appendChild(tarjeta);
+
+  const escena = tarjeta.querySelector('.escena');
+  const fichas = tarjeta.querySelector('[data-fichas]');
+  armas.forEach((arma) => {
+    const b = document.createElement('button');
+    b.type = 'button';
+    b.className = 'ficha';
+    b.textContent = arma.getNombre();
+    b.addEventListener('click', () => { personaje.cambiarArma(arma); actualizar(); });
+    fichas.appendChild(b);
+  });
+
+  function animar(clase) {
+    escena.classList.remove(clase);
+    void escena.offsetWidth;
+    escena.classList.add(clase);
+  }
+
+  tarjeta.querySelector('[data-atacar]').addEventListener('click', () => { personaje.atacar(); animar('golpe'); });
+  tarjeta.querySelector('[data-habilidad]').addEventListener('click', () => personaje.usarHabilidad());
+  tarjeta.querySelector('[data-danio]').addEventListener('click', () => { personaje.recibirDanio(20); animar('herido'); actualizar(); });
+  tarjeta.querySelector('[data-curar]').addEventListener('click', () => { personaje.reiniciarVida(); actualizar(); });
+
+  const vista = {
+    personaje,
+    refrescar() {
+      const vida = personaje.getVida(), max = personaje.getVidaMax();
+      tarjeta.querySelector('[data-vida]').textContent = `${vida} / ${max}`;
+      const barra = tarjeta.querySelector('[data-barra]');
+      barra.style.width = `${(vida / max) * 100}%`;
+      barra.classList.toggle('baja', vida / max <= 0.3);
+      escena.classList.toggle('caido', vida === 0);
+      const arma = personaje.getArma();
+      tarjeta.querySelector('[data-arma-nombre]').textContent = `${arma.getNombre()} (${arma.getDanio()})`;
+      tarjeta.querySelector('[data-arma]').innerHTML = GLIFOS[arma.getTipo()];
+      [...fichas.children].forEach((b, i) => b.setAttribute('aria-pressed', String(armas[i] === arma)));
+    },
+  };
+  vistas.push(vista);
+  return vista;
+}
+
+const armeria = document.getElementById('armeria');
+function actualizarArmeria() {
+  armeria.innerHTML = '';
+  armas.forEach((arma) => {
+    const duenos = vistas.filter((v) => v.personaje.getArma() === arma).map((v) => v.personaje.getNombre());
+    const el = document.createElement('div');
+    el.className = 'arma';
+    el.innerHTML = `<b>${arma.getNombre()}</b>
+      <div class="poder" role="img" aria-label="Daño ${arma.getDanio()} de 40"><i style="width:${(arma.getDanio() / 40) * 100}%"></i></div>
+      <small>Daño ${arma.getDanio()} · ${duenos.length ? 'En uso: ' + duenos.join(' y ') : 'Disponible'}</small>`;
+    armeria.appendChild(el);
+  });
+}
+
+function actualizar() {
+  vistas.forEach((v) => v.refrescar());
+  actualizarArmeria();
+}
+
+crearVista(guerrero, { color: 'var(--ember)', casco: true });
+crearVista(arquero, { color: 'var(--good)', casco: false });
+actualizar();
+
+document.getElementById('limpiar').addEventListener('click', () => { consola.innerHTML = ''; });
+
+// Secuencia inicial, igual a la del main() en C++
+guerrero.atacar();
+guerrero.usarHabilidad();
+guerrero.recibirDanio(20);
+guerrero.cambiarArma(armas[1]);
+guerrero.atacar();
+arquero.atacar();
+arquero.usarHabilidad();
+actualizar();
+</script>
+
+</body></html>
