@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RPG - Agregación de Armas</title>
+    <style>
+        :root {
+            --bg-color: #1e1e2e;
+            --panel-bg: #282a36;
+            --text-color: #f8f8f2;
+            --accent: #bd93f9;
+            --btn-bg: #44475a;
+            --btn-hover: #6272a4;
+            --log-bg: #000000;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+        }
+
+        .container {
+            background-color: var(--panel-bg);
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.5);
+            width: 400px;
+        }
+
+        h1 {
+            text-align: center;
+            color: var(--accent);
+            margin-top: 0;
+        }
+
+        .stats {
+            background-color: rgba(0,0,0,0.2);
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+
+        .stats p { margin: 5px 0; }
+        .stats span { font-weight: bold; color: var(--accent); }
+
+        .controls {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        button {
+            background-color: var(--btn-bg);
+            color: var(--text-color);
+            border: none;
+            padding: 10px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: background 0.2s;
+        }
+
+        button:hover { background-color: var(--btn-hover); }
+        .full-width { grid-column: span 2; }
+
+        .log {
+            background-color: var(--log-bg);
+            padding: 10px;
+            height: 150px;
+            overflow-y: auto;
+            border-radius: 5px;
+            font-family: monospace;
+            font-size: 13px;
+        }
+
+        .log p { margin: 2px 0; }
+        .log-attack { color: #ff5555; }
+        .log-skill { color: #50fa7b; }
+        .log-info { color: #8be9fd; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h1>Arena de Combate</h1>
+    
+    <div class="stats">
+        <p>👤 Nombre: <span id="ui-nombre">-</span></p>
+        <p>❤️ Vida: <span id="ui-vida">-</span></p>
+        <p>⚔️ Arma Actual: <span id="ui-arma">-</span></p>
+        <p>✨ Habilidad: <span id="ui-habilidad">-</span></p>
+    </div>
+
+    <div class="controls">
+        <button onclick="ejecutarAtaque()">Atacar</button>
+        <button onclick="ejecutarHabilidad()">Usar Habilidad</button>
+        <button class="full-width" onclick="equiparEspada()">Equipar Espada de Fuego</button>
+        <button class="full-width" onclick="equiparArco()">Equipar Arco Mágico</button>
+    </div>
+
+    <div class="log" id="consola"></div>
+</div>
+
+<script>
+    // ============================================
+    // CLASES (Lógica de Negocio)
+    // ============================================
+
+    class Arma {
+        constructor(nombre, danio) {
+            this.nombre = nombre;
+            this.danio = danio;
+        }
+
+        atacar() {
+            return `⚔️ Ataque con ${this.nombre}: ${this.danio} puntos de daño`;
+        }
+    }
+
+    class Habilidad {
+        constructor(nombre, poder) {
+            this.nombre = nombre;
+            this.poder = poder;
+        }
+
+        usar() {
+            return `✨ Se utiliza ${this.nombre}: ${this.poder} puntos de poder`;
+        }
+    }
+
+    class Personaje {
+        constructor(nombre, vida, arma, habilidad) {
+            this.nombre = nombre;
+            this.vida = vida;
+            this.arma = arma;           // Agregación
+            this.habilidad = habilidad; // Agregación
+        }
+
+        atacar() {
+            return `${this.nombre} ataca.<br>` + this.arma.atacar();
+        }
+
+        usarHabilidad() {
+            return `${this.nombre} utiliza una habilidad.<br>` + this.habilidad.usar();
+        }
+
+        cambiarArma(nuevaArma) {
+            this.arma = nuevaArma;
+            return `${this.nombre} ahora utiliza ${this.arma.nombre}`;
+        }
+    }
+
+    // ============================================
+    // INSTANCIACIÓN (Estado de la Aplicación)
+    // ============================================
+
+    // 1. Instanciamos los objetos independientes
+    const espada = new Arma("Espada de fuego", 30);
+    const arco = new Arma("Arco mágico", 20);
+    
+    const curacion = new Habilidad("Curación", 25);
+
+    // 2. Composición/Agregación: Personaje usando los objetos
+    const guerrero = new Personaje("Guerrero", 100, espada, curacion);
+
+
+    // ============================================
+    // CONTROLADORES DE LA INTERFAZ (DOM)
+    // ============================================
+
+    function actualizarUI() {
+        document.getElementById('ui-nombre').innerText = guerrero.nombre;
+        document.getElementById('ui-vida').innerText = guerrero.vida;
+        document.getElementById('ui-arma').innerText = guerrero.arma.nombre;
+        document.getElementById('ui-habilidad').innerText = guerrero.habilidad.nombre;
+    }
+
+    function registrarLog(mensaje, claseCSS) {
+        const consola = document.getElementById('consola');
+        consola.innerHTML += `<p class="${claseCSS}">${mensaje}</p>`;
+        consola.scrollTop = consola.scrollHeight; // Autoscroll hacia abajo
+    }
+
+    // Funciones disparadas por los botones
+    function ejecutarAtaque() {
+        const resultado = guerrero.atacar();
+        registrarLog(resultado, 'log-attack');
+    }
+
+    function ejecutarHabilidad() {
+        const resultado = guerrero.usarHabilidad();
+        registrarLog(resultado, 'log-skill');
+    }
+
+    function equiparEspada() {
+        if (guerrero.arma === espada) return; // Evitar equipar lo mismo
+        const resultado = guerrero.cambiarArma(espada);
+        actualizarUI();
+        registrarLog(resultado, 'log-info');
+    }
+
+    function equiparArco() {
+        if (guerrero.arma === arco) return;
+        const resultado = guerrero.cambiarArma(arco);
+        actualizarUI();
+        registrarLog(resultado, 'log-info');
+    }
+
+    // Inicializar la interfaz al cargar
+    actualizarUI();
+    registrarLog("Sistema iniciado. Guerrero listo.", "log-info");
+
+</script>
+</body>
+</html>
